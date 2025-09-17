@@ -10,7 +10,7 @@ const { v4: uuidv4 } = require('uuid');
 const app = express();
 const allowedOrigins = [
   // "http://localhost:3000",        // React local dev
-  "https://akshan-11092002-8254.netlify.app/", // Netlify deploy
+  "https://akshan-11092002-8254.netlify.app", // Netlify deploy
 ];
 
 app.use(cors({
