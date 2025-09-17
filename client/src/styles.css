@@ -543,7 +543,7 @@ body {
 
 /* Chat Area Styles */
 .chat-header {
-  padding: 18px;
+  padding: 14px;
   background: #fff;
   border-bottom: 1px solid #e5e7eb;
   z-index: 2;
@@ -1096,10 +1096,6 @@ button {
   cursor: pointer;
   font-weight: 500;
   transition: background-color 0.2s;
-}
-
-button:hover {
-  background: #1d4ed8;
 }
 
 .admin-actions {

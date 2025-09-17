@@ -287,55 +287,32 @@ export default function Chat({ currentUser }) {
     setShowLogoutModal(true);
   }
 
-  async function confirmLogout(clearChats) {
-    if (clearChats) {
-      try {
-        let success = true;
-        // Delete messages in each room using the existing delete message endpoint
-        for (const roomId of Object.keys(messages)) {
-          const roomMessages = messages[roomId] || [];
-          // Only delete messages sent by current user
-          const userMessages = roomMessages.filter(msg => msg.from === currentUser.id);
-          
-          // Delete each message
-          for (const msg of userMessages) {
-            const deleted = await deleteMessage(msg.id, roomId, true);
-            if (!deleted) {
-              success = false;
-            }
-          }
-          
-          if (userMessages.length > 0) {
-            // Notify room about deletion only if there were messages
-            socketRef.current.emit('message:deleteAll', {
-              roomId,
-              userId: currentUser.id
-            });
-          }
-        }
-        
-        // Wait a moment for socket messages to propagate
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        if (!success) {
-          console.warn('Some messages could not be deleted');
-        }
-      } catch (error) {
-        console.error('Error deleting chats:', error);
+async function confirmLogout(clearChats) {
+  if (clearChats) {
+    try {
+      for (const roomId of Object.keys(messages)) {
+        socketRef.current.emit("clear", { roomId });
       }
+
+      // wait a moment for server + sockets to sync
+      await new Promise(resolve => setTimeout(resolve, 500));
+    } catch (error) {
+      console.error("Error clearing chats:", error);
     }
-    
-    // Clear local state
-    setUsers([]);
-    setMessages({});
-    setActiveChat(null);
-    setShowLogoutModal(false);
-    
-    // Disconnect socket and logout
-    socketRef.current.disconnect();
-    localStorage.removeItem('qc_user');
-    location.reload();
   }
+
+  // Clear local state
+  setUsers([]);
+  setMessages({});
+  setActiveChat(null);
+  setShowLogoutModal(false);
+
+  // Disconnect socket and logout
+  socketRef.current.disconnect();
+  localStorage.removeItem("qc_user");
+  location.reload();
+}
+
 
   return (
     <div className="chat-container">
@@ -370,13 +347,13 @@ export default function Chat({ currentUser }) {
             <p>Would you like to delete your chats before logging out?</p>
           </Modal.Body>
           <Modal.Footer>
-            <Button variant="secondary" onClick={() => confirmLogout(false)}>
+            <Button variant="success" onClick={() => confirmLogout(false)}>
               Just Logout
             </Button>
             <Button variant="danger" onClick={() => confirmLogout(true)}>
               Delete Chats & Logout
             </Button>
-            <Button variant="light" onClick={() => setShowLogoutModal(false)}>
+            <Button variant="primary" onClick={() => setShowLogoutModal(false)}>
               Cancel
             </Button>
           </Modal.Footer>
@@ -456,7 +433,7 @@ export default function Chat({ currentUser }) {
                           >
                             Reply
                           </Button>
-                          {isMyMessage && (
+                          {/* {isMyMessage && (
                             <Button 
                               variant="link" 
                               size="sm"
@@ -465,7 +442,7 @@ export default function Chat({ currentUser }) {
                             >
                               Delete
                             </Button>
-                          )}
+                          )} */}
                         </div>
                       </div>
                     </div>
@@ -511,13 +488,13 @@ export default function Chat({ currentUser }) {
                   onChange={handleFileUpload}
                 />
                 
-                <button 
+                {/* <button 
                   type="button"
                   className="attach-button"
                   onClick={() => fileInputRef.current?.click()}
                 >
                   📎
-                </button>
+                </button> */}
                 
                 <button type="submit" className="send-button">
                   Send
