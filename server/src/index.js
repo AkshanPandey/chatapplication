@@ -1,4 +1,6 @@
+
 require('dotenv').config();
+// console.log("process.env.MONGODB_URI =", process.env.MONGODB_URI);
 const express = require('express');
 const http = require('http');
 const cors = require('cors');
@@ -30,7 +32,7 @@ if(process.env.MONGODB_URI){
 } else {
   console.log('No MONGODB_URI provided — using in-memory stores (demo mode)');
 }
-
+// console.log(process.env.MONGODB_URI);
 // Helper - find or create room between admin and user
 function roomIdFor(adminId, userId){
   return [adminId, userId].sort().join('--');
