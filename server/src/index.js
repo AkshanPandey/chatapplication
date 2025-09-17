@@ -8,7 +8,22 @@ const { v4: uuidv4 } = require('uuid');
 
 // ---------- App setup ----------
 const app = express();
-app.use(cors());
+const allowedOrigins = [
+  // "http://localhost:3000",        // React local dev
+  "https://akshan-11092002-8254.netlify.app/", // Netlify deploy
+];
+
+app.use(cors({
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error("Not allowed by CORS"));
+    }
+  },
+  credentials: true
+}));
+
 app.use(express.json());
 
 const PORT = process.env.PORT || 4000;
@@ -150,7 +165,14 @@ app.get('/api/partner', async (req, res) => {
 
 // ---------- Socket.IO ----------
 const server = http.createServer(app);
-const io = new Server(server, { cors: { origin: '*' } });
+// const io = new Server(server, { cors: { origin: '*' } });
+const io = new Server(server, {
+  cors: {
+    origin: allowedOrigins,
+    methods: ["GET", "POST"],
+    credentials: true
+  }
+});
 
 io.on('connection', (socket) => {
   console.log('⚡ New client connected');

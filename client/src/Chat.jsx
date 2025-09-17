@@ -36,7 +36,7 @@ export default function Chat({ currentUser }) {
   // Debug logging for messages
   useEffect(() => {
     if (activeChat) {
-      console.log('Current messages for room', activeChat.roomId, ':', messages[activeChat.roomId] || []);
+      // console.log('Current messages for room', activeChat.roomId, ':', messages[activeChat.roomId] || []);
     }
   }, [messages, activeChat]);
 
@@ -80,7 +80,7 @@ export default function Chat({ currentUser }) {
     });
 
     socketRef.current.on('room:history', ({ roomId, history }) => {
-      console.log('Received history for room:', roomId, history);
+      // console.log('Received history for room:', roomId, history);
       setMessages(prev => ({
         ...prev,
         [roomId]: history || []
