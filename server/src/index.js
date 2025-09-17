@@ -1,6 +1,4 @@
-
 require('dotenv').config();
-// console.log("process.env.MONGODB_URI =", process.env.MONGODB_URI);
 const express = require('express');
 const http = require('http');
 const cors = require('cors');
@@ -8,205 +6,198 @@ const { Server } = require('socket.io');
 const mongoose = require('mongoose');
 const { v4: uuidv4 } = require('uuid');
 
+// ---------- App setup ----------
 const app = express();
 app.use(cors());
 app.use(express.json());
 
 const PORT = process.env.PORT || 4000;
 
-// In-memory fallback stores (for quick demo)
-const InMemory = {
-  users: [], // { id, name, role, status }
-  rooms: {}, // roomId -> { participants: [ids], messages: [] }
-};
+// ---------- MongoDB Connection ----------
+mongoose.connect(process.env.MONGODB_URI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true
+})
+.then(() => console.log('✅ MongoDB connected'))
+.catch(err => {
+  console.error('❌ MongoDB connection failed:', err.message);
+  process.exit(1);
+});
 
-// Try connect to MongoDB if provided
-let DB = null;
-if(process.env.MONGODB_URI){
-  mongoose.connect(process.env.MONGODB_URI).then(()=>{ 
-    console.log('MongoDB connected');
-    DB = mongoose;
-  }).catch(err=>{
-    console.warn('MongoDB connect failed, using in-memory DB', err.message);
-  });
-} else {
-  console.log('No MONGODB_URI provided — using in-memory stores (demo mode)');
-}
-// console.log(process.env.MONGODB_URI);
-// Helper - find or create room between admin and user
+// ---------- Schemas ----------
+const userSchema = new mongoose.Schema({
+  id: { type: String, required: true },
+  name: { type: String, required: true, unique: true },
+  role: { type: String, default: 'user' },
+  status: { type: String, default: 'pending' },
+  createdAt: { type: Date, default: Date.now }
+});
+
+const roomSchema = new mongoose.Schema({
+  roomId: { type: String, required: true, unique: true },
+  participants: [{ type: String }],
+  messages: [{ type: Object }]
+});
+
+const User = mongoose.model('User', userSchema);
+const Room = mongoose.model('Room', roomSchema);
+
+// ---------- Helper ----------
 function roomIdFor(adminId, userId){
   return [adminId, userId].sort().join('--');
 }
 
-// REST endpoints
-app.post('/api/register', (req, res)=>{
+// ---------- REST APIs ----------
+
+// Register user
+app.post('/api/register', async (req, res) => {
   const { id, name } = req.body;
-  if(!id || !name) return res.status(400).json({ ok:false, error:'missing id/name' });
-  
-  // Check for existing user first
-  const existingUser = InMemory.users.find(u => u.name.toLowerCase() === name.toLowerCase());
-  if (existingUser) {
-    return res.json({ ok:true, user: existingUser });
-  }
+  if (!id || !name) return res.status(400).json({ ok:false, error:'missing id/name' });
 
-  // If no users exist, create admin
-  if(!InMemory.users.length){
-    const admin = { id, name, role:'admin', status:'approved', createdAt: Date.now() };
-    InMemory.users.push(admin);
-    return res.json({ ok:true, user: admin });
-  }
+  try {
+    // Check if user exists
+    let user = await User.findOne({ name: new RegExp(`^${name}$`, 'i') });
+    if (user) return res.json({ ok:true, user });
 
-  // Create new user
-  const user = { id, name, role:'user', status:'pending', createdAt: Date.now() };
-  InMemory.users.push(user);
-  return res.json({ ok:true, user });
+    // If first user → admin
+    const count = await User.countDocuments();
+    if (count === 0) {
+      user = await User.create({ id, name, role:'admin', status:'approved' });
+    } else {
+      user = await User.create({ id, name, role:'user', status:'pending' });
+    }
+
+    return res.json({ ok:true, user });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ ok:false, error:'server error' });
+  }
 });
 
-// Add admin transfer endpoint
-app.post('/api/transfer-admin', (req, res) => {
+// Transfer admin rights
+app.post('/api/transfer-admin', async (req, res) => {
   const { currentAdminId, newAdminId } = req.body;
-  
-  // Validate request
   if (!currentAdminId || !newAdminId) {
     return res.status(400).json({ ok: false, error: 'Missing required parameters' });
   }
 
-  // Find current admin and new admin users
-  const currentAdmin = InMemory.users.find(u => u.id === currentAdminId);
-  const newAdmin = InMemory.users.find(u => u.id === newAdminId);
+  try {
+    const currentAdmin = await User.findOne({ id: currentAdminId });
+    const newAdmin = await User.findOne({ id: newAdminId });
 
-  // Validate users and roles
-  if (!currentAdmin || currentAdmin.role !== 'admin') {
-    return res.status(403).json({ ok: false, error: 'Current user is not admin' });
+    if (!currentAdmin || currentAdmin.role !== 'admin') {
+      return res.status(403).json({ ok: false, error: 'Current user is not admin' });
+    }
+    if (!newAdmin) {
+      return res.status(404).json({ ok: false, error: 'New admin user not found' });
+    }
+
+    currentAdmin.role = 'user';
+    await currentAdmin.save();
+
+    newAdmin.role = 'admin';
+    newAdmin.status = 'approved';
+    await newAdmin.save();
+
+    return res.json({ ok: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ ok:false, error:'server error' });
   }
-  if (!newAdmin) {
-    return res.status(404).json({ ok: false, error: 'New admin user not found' });
-  }
-
-  // Transfer admin rights
-  currentAdmin.role = 'user';
-  newAdmin.role = 'admin';
-  newAdmin.status = 'approved';
-
-  return res.json({ ok: true });
 });
 
-app.get('/api/users', (req, res)=>{
-  return res.json({ ok:true, users: InMemory.users });
+// Get all users
+app.get('/api/users', async (req, res) => {
+  try {
+    const users = await User.find();
+    return res.json({ ok:true, users });
+  } catch (err) {
+    res.status(500).json({ ok:false, error:'server error' });
+  }
 });
 
-app.post('/api/users/approve', (req, res)=>{
+// Approve user
+app.post('/api/users/approve', async (req, res) => {
   const { id } = req.body;
-  const u = InMemory.users.find(x=>x.id===id);
-  if(u) u.status = 'approved';
+  await User.updateOne({ id }, { status: 'approved' });
   return res.json({ ok:true });
 });
-app.post('/api/users/reject', (req, res)=>{
+
+// Reject (delete) user
+app.post('/api/users/reject', async (req, res) => {
   const { id } = req.body;
-  const idx = InMemory.users.findIndex(x=>x.id===id);
-  if(idx!==-1) InMemory.users.splice(idx,1);
+  await User.deleteOne({ id });
   return res.json({ ok:true });
 });
 
-app.get('/api/partner', (req, res)=>{
-  const userId = req.query.userId;
-  const admin = InMemory.users.find(u=>u.role==='admin');
-  const me = InMemory.users.find(u=>u.id===userId);
-  const approved = InMemory.users.filter(u=>u.status==='approved' && u.id !== admin?.id);
-  if(me?.role === 'admin'){
+// Partner API
+app.get('/api/partner', async (req, res) => {
+  const { userId } = req.query;
+  const admin = await User.findOne({ role: 'admin' });
+  const me = await User.findOne({ id: userId });
+  const approved = await User.find({ status: 'approved', id: { $ne: admin?.id } });
+
+  if (me?.role === 'admin') {
     const partner = approved[0] || null;
     const roomId = partner ? roomIdFor(admin.id, partner.id) : null;
     return res.json({ ok:true, partner, roomId });
   }
+
   const partner = admin || null;
   const roomId = partner ? roomIdFor(admin.id, userId) : null;
   return res.json({ ok:true, partner, roomId });
 });
 
-// Presign upload (placeholder using S3 if configured)
-app.post('/api/upload/presign', async (req, res)=>{
-  // For demo: return a mocked URL; if AWS keys provided, you can implement S3 presign here.
-  const { name } = req.body;
-  if(!name) return res.status(400).json({ ok:false, error:'missing name' });
-  if(process.env.AWS_ACCESS_KEY_ID && process.env.S3_BUCKET){
-    // Implementing minimal presign using aws-sdk v2
-    const AWS = require('aws-sdk');
-    const s3 = new AWS.S3({ region: process.env.AWS_REGION });
-    const key = `uploads/${Date.now()}-${name}`;
-    const params = { Bucket: process.env.S3_BUCKET, Key: key, Expires: 60*5, ContentType: req.body.type || 'application/octet-stream' };
-    const url = s3.getSignedUrl('putObject', params);
-    const publicUrl = `https://${process.env.S3_BUCKET}.s3.${process.env.AWS_REGION}.amazonaws.com/${key}`;
-    return res.json({ ok:true, uploadUrl: url, publicUrl, key });
-  } else {
-    const publicUrl = `https://example.com/uploads/${encodeURIComponent(name)}`;
-    return res.json({ ok:true, uploadUrl: publicUrl, publicUrl, key: null });
-  }
-});
-
-// Clear room messages endpoint
-app.post('/api/clear-chats', async (req, res)=>{
-  const { userId, deleteAll } = req.body;
-  if(!userId) return res.status(400).json({ ok:false, error:'missing userId' });
-  
-  // Clear all rooms where user is a participant
-  Object.keys(InMemory.rooms).forEach(roomId => {
-    const room = InMemory.rooms[roomId];
-    if(room.participants.includes(userId)){
-      if (deleteAll) {
-        // Delete the entire room
-        delete InMemory.rooms[roomId];
-      } else {
-        // Just clear the messages
-        room.messages = [];
-      }
-      // Notify all participants about the cleared chat
-      io.to(roomId).emit('chat:cleared', { roomId });
-    }
-  });
-  return res.json({ ok:true });
-});
-
-// Start server and socket.io
+// ---------- Socket.IO ----------
 const server = http.createServer(app);
 const io = new Server(server, { cors: { origin: '*' } });
 
-io.on('connection', (socket)=>{
-  // join room
-  socket.on('join', ({ roomId, user })=>{
+io.on('connection', (socket) => {
+  console.log('⚡ New client connected');
+
+  socket.on('join', async ({ roomId, user }) => {
     socket.join(roomId);
     socket.data.user = user;
-    // send room history if any
-    const r = InMemory.rooms[roomId] || { participants: [], messages: [] };
-    InMemory.rooms[roomId] = r;
-    if(!r.participants.includes(user.id)) r.participants.push(user.id);
-    // Send room history with roomId
-    socket.emit('room:history', { roomId, history: r.messages || [] });
+
+    let room = await Room.findOne({ roomId });
+    if (!room) {
+      room = await Room.create({ roomId, participants: [user.id], messages: [] });
+    } else if (!room.participants.includes(user.id)) {
+      room.participants.push(user.id);
+      await room.save();
+    }
+
+    socket.emit('room:history', { roomId, history: room.messages });
   });
 
-  socket.on('message', (payload)=>{
-    // payload: { roomId, msg }
-    const { roomId, msg } = payload;
-    InMemory.rooms[roomId] = InMemory.rooms[roomId] || { participants: [], messages: [] };
-    InMemory.rooms[roomId].messages.push(msg);
-    // Broadcast message with roomId
+  socket.on('message', async ({ roomId, msg }) => {
+    let room = await Room.findOne({ roomId });
+    if (!room) {
+      room = await Room.create({ roomId, participants: [], messages: [] });
+    }
+    room.messages.push(msg);
+    await room.save();
+
     io.to(roomId).emit('message', { roomId, msg });
   });
 
-  socket.on('typing', ({ roomId, userId, value })=>{
+  socket.on('typing', ({ roomId, userId, value }) => {
     socket.to(roomId).emit('typing', { userId, value });
   });
 
-  socket.on('reaction', ({ roomId, msgId, by, reaction })=>{
-    // naive: broadcast
+  socket.on('reaction', ({ roomId, msgId, by, reaction }) => {
     io.to(roomId).emit('reaction', { msgId, by, reaction });
   });
 
-  socket.on('clear', ({ roomId })=>{
-    if(InMemory.rooms[roomId]) InMemory.rooms[roomId].messages = [];
+  socket.on('clear', async ({ roomId }) => {
+    await Room.updateOne({ roomId }, { $set: { messages: [] } });
     io.to(roomId).emit('room:cleared');
   });
 
-  socket.on('disconnect', ()=>{});
+  socket.on('disconnect', () => {
+    console.log('❌ Client disconnected');
+  });
 });
 
-server.listen(PORT, ()=> console.log('Server listening on', PORT));
+// ---------- Start Server ----------
+server.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
