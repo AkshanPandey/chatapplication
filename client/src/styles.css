@@ -451,79 +451,97 @@ body {
   bottom: 0;
   left: 0;
   right: 0;
-  z-index: 100;
+  z-index: 1000;
+  background: #fff;
+  box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+  padding-bottom: calc(16px + env(safe-area-inset-bottom));
+}
+
+.messages-container {
+  flex: 1;
+  overflow-y: auto;
+  padding: clamp(12px, 3vw, 20px);
+  padding-bottom: 100px;
+  margin-bottom: 60px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  -webkit-overflow-scrolling: touch;
+  height: calc(100vh - 120px);
+  position: relative;
+}
+
+/* Add overlay for emoji picker */
+.emoji-picker-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 998;
+}
+
+.emoji-picker-container {
+  position: fixed;
+  bottom: 70px;
+  left: 0;
+  right: 0;
+  height: 50vh;
+  z-index: 999;
+  background: white;
   border-top: 1px solid #e5e7eb;
-  padding-bottom: env(safe-area-inset-bottom); /* For iPhone notch */
+  border-radius: 16px 16px 0 0;
+  box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .input-container {
   display: flex;
   gap: 8px;
   align-items: center;
-  flex-wrap: nowrap;
+  background: #fff;
+  border-radius: 24px;
+  padding: 8px 12px;
+  margin: 0;
+  position: relative;
+  z-index: 1001;
 }
 
-/* Mobile optimizations for input area */
+/* Mobile specific styles */
 @media (max-width: 768px) {
+  .messages-container {
+    padding-bottom: 120px;
+    height: calc(100vh - 180px);
+  }
+
   .message-input {
-    padding: 10px;
-    bottom: 0;
-    background: #fff;
-    box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
-  }
-
-  .input-container {
-    gap: 4px;
-  }
-
-  .input-container input {
-    font-size: 16px; /* Prevent iOS zoom */
-    padding: 8px;
-    height: 40px; /* Consistent height */
-    flex: 1;
+    padding: 12px;
+    padding-bottom: calc(12px + env(safe-area-inset-bottom));
   }
 
   .emoji-picker-container {
-    position: fixed;
-    bottom: 60px; /* Above the input box */
-    left: 0;
-    right: 0;
-    height: 50vh;
-    z-index: 1000;
-    background: white;
-    border-top: 1px solid #e5e7eb;
-    border-radius: 16px 16px 0 0;
+    height: 40vh;
   }
 
-  .emoji-picker-react {
-    width: 100% !important;
-    height: 100% !important;
+  .input-container {
+    margin: 0;
   }
 
-  .chat-main {
-    padding-bottom: 60px; /* Space for fixed input */
+  .input-container input {
+    height: 40px;
+    font-size: 16px;
   }
 
-  /* Ensure buttons are easily tappable */
-  .emoji-button, .attach-button, .send-button {
+  /* Make buttons more tappable */
+  .emoji-button,
+  .attach-button,
+  .send-button {
     min-width: 44px;
     min-height: 44px;
-    padding: 10px;
     display: flex;
     align-items: center;
     justify-content: center;
-    background: none;
-    border: none;
-    color: #4f46e5;
-  }
-
-  /* Make the input area more visible */
-  .input-container {
-    background: #fff;
-    border-radius: 24px;
-    padding: 4px 8px;
-    margin: 0;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    padding: 10px;
   }
 }
 

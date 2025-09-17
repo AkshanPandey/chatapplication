@@ -5,7 +5,7 @@ import EmojiPicker from 'emoji-picker-react'
 import { Modal, Button, Alert } from 'react-bootstrap'
 import 'bootstrap/dist/css/bootstrap.min.css'
 
-const SERVER = import.meta.env.VITE_SERVER_URL || 'https://chatapplication-st0v.onrender.com'
+const SERVER = import.meta.env.VITE_SERVER_URL || 'http://localhost:4000'
 
 export default function Chat({ currentUser }) {
   const [users, setUsers] = useState([])
@@ -525,13 +525,18 @@ export default function Chat({ currentUser }) {
               </div>
               
               {showEmojiPicker && (
-                <div className="emoji-picker-container">
-                  <EmojiPicker
-                    onEmojiClick={handleEmojiClick}
-                    width={300}
-                    height={400}
-                  />
-                </div>
+                <>
+                  <div className="emoji-picker-overlay" onClick={() => setShowEmojiPicker(false)} />
+                  <div className="emoji-picker-container">
+                    <EmojiPicker
+                      onEmojiClick={handleEmojiClick}
+                      width="100%"
+                      height="100%"
+                      searchPlaceholder="Search emoji..."
+                      previewConfig={{ showPreview: false }}
+                    />
+                  </div>
+                </>
               )}
               
               {fileUploading && (
