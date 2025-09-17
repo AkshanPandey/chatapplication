@@ -159,28 +159,38 @@ body {
     position: fixed !important;
     top: 0 !important;
     left: -100% !important;
-    height: 100vh !important;
+    height: 100% !important;
     width: 100% !important;
     max-width: 100% !important;
     background: #fff !important;
     z-index: 1000 !important;
     transition: left 0.3s ease !important;
+    overflow-y: auto !important; /* Enable scrolling */
+    -webkit-overflow-scrolling: touch !important; /* Smooth scroll on iOS */
+    padding-bottom: env(safe-area-inset-bottom) !important; /* For iPhone notch */
+    display: flex !important;
+    flex-direction: column !important;
   }
 
   .chat-sidebar.open {
     left: 0 !important;
   }
 
-  .chat-sidebar {
-    position: fixed;
-    top: 0;
-    left: -100%;
-    bottom: 0;
-    width: 100%;
-    max-width: 100%;
-    background: #fff;
-    z-index: 999;
-    transition: left 0.3s ease;
+  /* Ensure proper header positioning */
+  .sidebar-header {
+    position: sticky !important;
+    top: 0 !important;
+    background: #fff !important;
+    z-index: 2 !important;
+    padding: 16px !important;
+    border-bottom: 1px solid #e5e7eb !important;
+  }
+
+  /* Ensure users list takes remaining space */
+  .users-list {
+    flex: 1 !important;
+    overflow-y: auto !important;
+    padding-bottom: 20px !important;
   }
 
   .chat-sidebar.open {
@@ -257,6 +267,28 @@ body {
 .users-list {
   overflow-y: auto;
   flex: 1;
+  padding-bottom: 20px;
+  -webkit-overflow-scrolling: touch;
+}
+
+@media (max-width: 768px) {
+  .users-list {
+    padding-top: 10px;
+    height: auto;
+    min-height: calc(100vh - 180px); /* Account for header and padding */
+  }
+
+  .user-item {
+    padding: 15px !important;
+    margin: 5px 10px !important;
+    border-radius: 12px !important;
+    background: #f8f9fa !important;
+    border: 1px solid #e5e7eb !important;
+  }
+
+  .user-item:active {
+    background: #e5e7eb !important;
+  }
 }
 
 .user-item {
