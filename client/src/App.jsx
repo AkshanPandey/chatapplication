@@ -3,7 +3,7 @@ import { v4 as uuidv4 } from 'uuid'
 import Chat from './Chat'
 import Admin from './Admin'
 
-const SERVER = import.meta.env.VITE_SERVER_URL || 'http://localhost:4000'
+const SERVER = import.meta.env.VITE_SERVER_URL || 'https://chatapplication-st0v.onrender.com'
 
 export default function App(){
   const [user, setUser] = useState(null)

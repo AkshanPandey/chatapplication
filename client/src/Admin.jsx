@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { v4 as uuidv4 } from 'uuid'
 
-const SERVER = import.meta.env.VITE_SERVER_URL || 'http://localhost:4000'
+const SERVER = import.meta.env.VITE_SERVER_URL || 'https://chatapplication-st0v.onrender.com'
 
 export default function Admin({ currentUser, users }){
   const [newUserName, setNewUserName] = useState('')

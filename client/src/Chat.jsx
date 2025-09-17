@@ -5,7 +5,7 @@ import EmojiPicker from 'emoji-picker-react'
 import { Modal, Button, Alert } from 'react-bootstrap'
 import 'bootstrap/dist/css/bootstrap.min.css'
 
-const SERVER = import.meta.env.VITE_SERVER_URL || 'http://localhost:4000'
+const SERVER = import.meta.env.VITE_SERVER_URL || 'https://chatapplication-st0v.onrender.com'
 
 export default function Chat({ currentUser }) {
   const [users, setUsers] = useState([])
