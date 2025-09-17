@@ -204,12 +204,14 @@ body {
   background: #f0f2f5;
   position: relative;
   min-width: 0; /* Fix for text overflow */
+  height: 100vh;
+  overflow-y: hidden;
 }
 
 /* Sidebar Styles */
 .sidebar-header {
   padding: clamp(12px, 3vw, 16px);
-  background: #f0f2f5;
+  background: #ffffff;
   border-bottom: 1px solid #e5e7eb;
   display: flex;
   align-items: center;
@@ -303,7 +305,7 @@ body {
 
 /* Chat Area Styles */
 .chat-header {
-  padding: 16px;
+  padding: 18px;
   background: #fff;
   border-bottom: 1px solid #e5e7eb;
   z-index: 2;
@@ -335,10 +337,12 @@ body {
   flex: 1;
   overflow-y: auto;
   padding: clamp(12px, 3vw, 20px);
+  padding-bottom: 80px; /* Space for message input */
   display: flex;
   flex-direction: column;
   gap: 8px;
   -webkit-overflow-scrolling: touch; /* Smooth scroll on iOS */
+  height: calc(100vh - 120px); /* Adjust for header and input */
 }
 
 .message {
@@ -443,7 +447,13 @@ body {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  position: relative;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  border-top: 1px solid #e5e7eb;
+  padding-bottom: env(safe-area-inset-bottom); /* For iPhone notch */
 }
 
 .input-container {
@@ -457,6 +467,9 @@ body {
 @media (max-width: 768px) {
   .message-input {
     padding: 10px;
+    bottom: 0;
+    background: #fff;
+    box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
   }
 
   .input-container {
@@ -466,11 +479,13 @@ body {
   .input-container input {
     font-size: 16px; /* Prevent iOS zoom */
     padding: 8px;
+    height: 40px; /* Consistent height */
+    flex: 1;
   }
 
   .emoji-picker-container {
     position: fixed;
-    bottom: 0;
+    bottom: 60px; /* Above the input box */
     left: 0;
     right: 0;
     height: 50vh;
@@ -483,6 +498,32 @@ body {
   .emoji-picker-react {
     width: 100% !important;
     height: 100% !important;
+  }
+
+  .chat-main {
+    padding-bottom: 60px; /* Space for fixed input */
+  }
+
+  /* Ensure buttons are easily tappable */
+  .emoji-button, .attach-button, .send-button {
+    min-width: 44px;
+    min-height: 44px;
+    padding: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: none;
+    border: none;
+    color: #4f46e5;
+  }
+
+  /* Make the input area more visible */
+  .input-container {
+    background: #fff;
+    border-radius: 24px;
+    padding: 4px 8px;
+    margin: 0;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
   }
 }
 
