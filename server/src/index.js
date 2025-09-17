@@ -7,7 +7,6 @@ const mongoose = require('mongoose');
 const { v4: uuidv4 } = require('uuid');
 
 // ---------- App setup ----------
-const app = express();
 const allowedOrigins = [
   // "http://localhost:3000",        // React local dev
   "https://akshan-11092002-8254.netlify.app", // Netlify deploy
@@ -23,6 +22,7 @@ app.use(cors({
   },
   credentials: true
 }));
+const app = express();
 
 app.use(express.json());
 
